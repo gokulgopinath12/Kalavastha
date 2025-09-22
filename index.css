@@ -33,6 +33,21 @@ body.dark {
   --error-background-color: #4d2323;
 }
 
+body.ocean {
+  --primary-color: #38bdf8;
+  --primary-color-dark: #0ea5e9;
+  --text-color: #e0f2fe;
+  --text-color-light: #7dd3fc;
+  --background-color: #0c1427;
+  --component-background: #172a46;
+  --header-background: #172a46;
+  --border-color: #2c3e5a;
+  --hover-background-color: #253a5e;
+  --active-text-color: #0c1427;
+  --error-color: #fb7185;
+  --error-background-color: #581c2f;
+}
+
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -177,6 +192,7 @@ main {
 .weather-card .location-info h2,
 .weather-card .weather-icon,
 .weather-card .weather-body .temperature,
+.weather-card .weather-body .feels-like,
 .weather-card .weather-body .condition,
 .weather-card .weather-details p {
   animation: fadeInUp 0.5s ease-out both;
@@ -185,9 +201,10 @@ main {
 .weather-card .location-info h2 { animation-delay: 0.1s; }
 .weather-card .weather-icon { animation-delay: 0.2s; }
 .weather-card .weather-body .temperature { animation-delay: 0.3s; }
-.weather-card .weather-body .condition { animation-delay: 0.4s; }
-.weather-card .weather-details p:nth-of-type(1) { animation-delay: 0.5s; }
-.weather-card .weather-details p:nth-of-type(2) { animation-delay: 0.6s; }
+.weather-card .weather-body .feels-like { animation-delay: 0.35s; }
+.weather-card .weather-body .condition { animation-delay: 0.45s; }
+.weather-card .weather-details p:nth-of-type(1) { animation-delay: 0.55s; }
+.weather-card .weather-details p:nth-of-type(2) { animation-delay: 0.65s; }
 
 .weather-header {
   display: flex;
@@ -244,6 +261,13 @@ main {
   font-size: 2.5rem;
   font-weight: 600;
   margin: 0;
+}
+
+.weather-body .feels-like {
+  font-size: 1.1rem;
+  color: var(--text-color-light);
+  margin: -0.25rem 0 1rem;
+  transition: color 0.3s ease;
 }
 
 .weather-body .condition {
@@ -319,7 +343,8 @@ main {
   color: var(--component-background);
 }
 
-body.dark .error-action-btn:hover {
+body.dark .error-action-btn:hover,
+body.ocean .error-action-btn:hover {
   color: var(--background-color);
 }
 

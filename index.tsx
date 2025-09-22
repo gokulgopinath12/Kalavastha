@@ -19,6 +19,8 @@ interface WeatherData {
   };
   temperatureCelsius: number;
   temperatureFahrenheit: number;
+  feelsLikeCelsius: number;
+  feelsLikeFahrenheit: number;
   condition: string;
   humidity: number;
   windSpeedKph: number;
@@ -49,7 +51,7 @@ interface ForecastDataPoint {
 
 // Define available icon sets
 type IconSet = 'emojis' | 'classic';
-type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'ocean';
 
 // Define the type for the context passed to child routes
 type AppContext = {
@@ -138,6 +140,9 @@ const Home = () => {
             <div className="weather-body">
               <p className="temperature">
                 {unit === 'C' ? weatherData.temperatureCelsius : weatherData.temperatureFahrenheit}°{unit}
+              </p>
+              <p className="feels-like">
+                Feels like {unit === 'C' ? weatherData.feelsLikeCelsius : weatherData.feelsLikeFahrenheit}°{unit}
               </p>
               <p className="condition">{weatherData.condition}</p>
             </div>
@@ -333,7 +338,7 @@ const Forecast = () => {
         return null;
     };
     
-    const chartLineColor = theme === 'dark' ? '#e0e0e0' : '#333';
+    const chartLineColor = theme === 'dark' ? '#e0e0e0' : (theme === 'ocean' ? '#e0f2fe' : '#333');
 
     return (
         <div>
@@ -352,7 +357,7 @@ const Forecast = () => {
                             data={forecastData}
                             margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
                         >
-                            <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#444' : '#ccc'} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#444' : (theme === 'ocean' ? '#2c3e5a' : '#ccc')} />
                             <XAxis dataKey="date" stroke={chartLineColor} />
                             <YAxis stroke={chartLineColor} label={{ value: `°${unit}`, angle: -90, position: 'insideLeft', fill: chartLineColor }} />
                             <Tooltip content={<CustomTooltip />} />
@@ -406,6 +411,13 @@ const Settings = () => {
                         aria-pressed={theme === 'dark'}
                     >
                         Dark
+                    </button>
+                    <button
+                        className={theme === 'ocean' ? 'active' : ''}
+                        onClick={() => setTheme('ocean')}
+                        aria-pressed={theme === 'ocean'}
+                    >
+                        Ocean
                     </button>
                 </div>
             </div>
@@ -501,7 +513,7 @@ const Layout = () => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: `Get the current weather for ${locationQuery}. Provide a standardized condition code. If the location is not found, the error field should explain that.`,
+          contents: `Get the current weather for ${locationQuery}. Provide a standardized condition code and the "feels like" temperature. If the location is not found, the error field should explain that.`,
           config: {
               responseMimeType: "application/json",
               responseSchema: {
@@ -518,6 +530,8 @@ const Layout = () => {
                       },
                       temperatureCelsius: { type: Type.NUMBER, description: 'Temperature in Celsius' },
                       temperatureFahrenheit: { type: Type.NUMBER, description: 'Temperature in Fahrenheit' },
+                      feelsLikeCelsius: { type: Type.NUMBER, description: 'The "feels like" temperature in Celsius' },
+                      feelsLikeFahrenheit: { type: Type.NUMBER, description: 'The "feels like" temperature in Fahrenheit' },
                       condition: { type: Type.STRING, description: 'e.g., Sunny, Partly cloudy' },
                       humidity: { type: Type.NUMBER, description: 'Humidity in percentage' },
                       windSpeedKph: { type: Type.NUMBER, description: 'Wind speed in kilometers per hour' },
