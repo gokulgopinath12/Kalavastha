@@ -7,6 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Routes, Route, NavLink, Outlet, useOutletContext, useNavigate } from 'react-router-dom';
 import { GoogleGenAI, Type } from "@google/genai";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
 
 // Define the structure of the weather data for TypeScript
 interface WeatherData {
@@ -23,6 +25,14 @@ interface WeatherData {
   windSpeedMph: number;
   conditionCode: string; // Standardized code for the weather condition
   error?: string;
+}
+
+interface HistoricalDataPoint {
+    date: string;
+    maxTempC: number;
+    minTempC: number;
+    maxTempF: number;
+    minTempF: number;
 }
 
 // Define available icon sets
@@ -85,7 +95,9 @@ const Home = () => {
           <div className="weather-card">
             <div className="weather-header">
               <h2>{weatherData.location.name}, {weatherData.location.country}</h2>
-              <div className="weather-icon">{getIcon(weatherData.conditionCode)}</div>
+              <div className={`weather-icon icon-${weatherData.conditionCode.toLowerCase()}`}>
+                {getIcon(weatherData.conditionCode)}
+              </div>
             </div>
             <div className="weather-body">
               <p className="temperature">
@@ -113,6 +125,103 @@ const About = () => (
         <p>Kalavastha is a modern weather application built to provide you with accurate and beautiful weather forecasts. Our mission is to deliver weather data in a clean, intuitive, and accessible way, powered by Google's Gemini API.</p>
     </div>
 );
+
+const History = () => {
+    const { weatherData, unit } = useOutletContext<AppContext>();
+    const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchHistory = async (location: string) => {
+            if (!location) return;
+
+            setIsLoading(true);
+            setError(null);
+            setHistoricalData([]);
+
+            try {
+                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+                const response = await ai.models.generateContent({
+                    model: "gemini-2.5-flash",
+                    contents: `Get the historical weather for ${location} for the last 7 days. Provide the daily maximum and minimum temperatures. Format the date as 'Mon, Jun 10'.`,
+                    config: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.OBJECT,
+                            properties: {
+                                data: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            date: { type: Type.STRING, description: "Formatted date string, e.g., 'Mon, Jun 10'" },
+                                            maxTempC: { type: Type.NUMBER },
+                                            minTempC: { type: Type.NUMBER },
+                                            maxTempF: { type: Type.NUMBER },
+                                            minTempF: { type: Type.NUMBER },
+                                        },
+                                        required: ['date', 'maxTempC', 'minTempC', 'maxTempF', 'minTempF'],
+                                    },
+                                }
+                            }
+                        },
+                    },
+                });
+
+                const data: {data: HistoricalDataPoint[]} = JSON.parse(response.text);
+                setHistoricalData(data.data);
+            } catch (err) {
+                console.error("Error fetching historical weather data:", err);
+                setError("An unexpected error occurred while fetching historical data.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (weatherData?.location) {
+            fetchHistory(`${weatherData.location.name}, ${weatherData.location.country}`);
+        }
+    }, [weatherData]);
+
+    const maxTempKey = unit === 'C' ? 'maxTempC' : 'maxTempF';
+    const minTempKey = unit === 'C' ? 'minTempC' : 'minTempF';
+    
+    return (
+        <div>
+            <h1>7-Day Temperature Trend</h1>
+            {weatherData?.location ? (
+                <p>Showing history for: <strong>{weatherData.location.name}, {weatherData.location.country}</strong></p>
+            ) : (
+                <p>Search for a location to see its 7-day temperature history.</p>
+            )}
+
+            <div className="history-container">
+                {isLoading && <div className="loader" role="status" aria-label="Loading historical data"></div>}
+                {error && <div className="error-message" role="alert">{error}</div>}
+                {!isLoading && !error && historicalData.length > 0 && (
+                     <div className="chart-container">
+                        <ResponsiveContainer width="100%" height={400}>
+                            <LineChart data={historicalData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis label={{ value: `Temperature (°${unit})`, angle: -90, position: 'insideLeft' }} />
+                                <Tooltip />
+                                <Legend />
+                                <Line type="monotone" dataKey={maxTempKey} name={`Max Temp (°${unit})`} stroke="#ff6b6b" activeDot={{ r: 8 }} />
+                                <Line type="monotone" dataKey={minTempKey} name={`Min Temp (°${unit})`} stroke="#4dabf7" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+                 {!isLoading && !error && historicalData.length === 0 && !weatherData?.location && (
+                    <p>No data to display. Please search for a city on the Home page.</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 const Settings = () => {
     const { unit, setUnit, iconSet, setIconSet, searchHistory, handleHistorySearch } = useOutletContext<AppContext>();
@@ -213,6 +322,7 @@ const Layout = () => {
     setIsLoading(true);
     setWeatherData(null);
     setError(null);
+    navigate('/'); // Navigate to home on new search
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -273,7 +383,6 @@ const Layout = () => {
   };
 
   const handleHistorySearch = (location: string) => {
-    navigate('/');
     fetchWeather(location);
   };
 
@@ -285,6 +394,11 @@ const Layout = () => {
             <li>
               <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
                 Home
+              </NavLink>
+            </li>
+             <li>
+              <NavLink to="/history" className={({ isActive }) => (isActive ? 'active' : '')}>
+                History
               </NavLink>
             </li>
             <li>
@@ -327,6 +441,7 @@ const App = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
+          <Route path="history" element={<History />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
