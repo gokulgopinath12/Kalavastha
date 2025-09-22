@@ -10,6 +10,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 
+interface WeatherAlert {
+  title: string;
+  description: string;
+}
+
 // Define the structure of the weather data for TypeScript
 interface WeatherData {
   location: {
@@ -26,6 +31,7 @@ interface WeatherData {
   windSpeedKph: number;
   windSpeedMph: number;
   conditionCode: string; // Standardized code for the weather condition
+  alerts?: WeatherAlert[];
   error?: string;
 }
 
@@ -103,6 +109,7 @@ const getIcon = (conditionCode: string, iconSet: IconSet) => {
 
 const Home = () => {
   const { weatherData, isLoading, isRefreshing, error, unit, iconSet, handleRefresh, requestGeolocation } = useOutletContext<AppContext>();
+  const [selectedAlert, setSelectedAlert] = useState<WeatherAlert | null>(null);
 
   return (
     <div>
@@ -142,6 +149,20 @@ const Home = () => {
                 {getIcon(weatherData.conditionCode, iconSet)}
               </div>
             </div>
+
+            {weatherData.alerts && weatherData.alerts.length > 0 && (
+              <div
+                  className="weather-alert-banner"
+                  role="alert"
+                  tabIndex={0}
+                  onClick={() => setSelectedAlert(weatherData.alerts![0])}
+                  onKeyDown={(e) => e.key === 'Enter' && setSelectedAlert(weatherData.alerts![0])}
+              >
+                  <span className="alert-icon" aria-hidden="true">⚠️</span>
+                  <span className="alert-title">{weatherData.alerts[0].title}</span>
+              </div>
+            )}
+            
             <div className="weather-body">
               <p className="temperature">
                 {unit === 'C' ? weatherData.temperatureCelsius : weatherData.temperatureFahrenheit}°{unit}
@@ -163,6 +184,19 @@ const Home = () => {
           </div>
         )}
       </div>
+
+      {selectedAlert && (
+          <div className="modal-overlay" onClick={() => setSelectedAlert(null)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="modal-title">{selectedAlert.title}</h3>
+                  <p className="modal-description">{selectedAlert.description}</p>
+                  <button onClick={() => setSelectedAlert(null)} className="modal-close-btn" autoFocus>
+                      Close
+                  </button>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 };
@@ -520,7 +554,7 @@ const Layout = () => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: `Get the current weather for ${locationQuery}. Provide a standardized condition code and the "feels like" temperature. If the location is not found, the error field should explain that.`,
+          contents: `Get the current weather for ${locationQuery}. Provide a standardized condition code, the "feels like" temperature, and include any active weather alerts with a title and detailed description. If the location is not found, the error field should explain that.`,
           config: {
               responseMimeType: "application/json",
               responseSchema: {
@@ -544,6 +578,18 @@ const Layout = () => {
                       windSpeedKph: { type: Type.NUMBER, description: 'Wind speed in kilometers per hour' },
                       windSpeedMph: { type: Type.NUMBER, description: 'Wind speed in miles per hour' },
                       conditionCode: { type: Type.STRING, description: 'A single, lowercase, standardized weather condition code. Examples: "sunny", "partly-cloudy", "cloudy", "rain", "snow", "thunderstorm", "fog", "windy".' },
+                      alerts: {
+                          type: Type.ARRAY,
+                          description: 'An array of active weather alerts. Each alert should have a title and a description.',
+                          items: {
+                              type: Type.OBJECT,
+                              properties: {
+                                  title: { type: Type.STRING },
+                                  description: { type: Type.STRING },
+                              },
+                              required: ['title', 'description'],
+                          },
+                      },
                       error: { type: Type.STRING, description: 'Error message if location is not found' },
                   },
               },
