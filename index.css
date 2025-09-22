@@ -168,24 +168,73 @@ main {
 
 .search-results-container {
   margin-top: 2rem;
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.placeholder-container {
   padding: 1.5rem;
   background-color: var(--component-background);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  min-height: 150px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 100%;
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Weather Card Styles */
 .weather-card {
   width: 100%;
-  max-width: 400px;
   text-align: left;
+  background-color: var(--component-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+/* Weather Card with background image */
+.weather-card.with-background {
+  position: relative;
+  border: none;
+  color: #fff;
+  background-size: cover;
+  background-position: center;
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0;
+  transition: background-image 0.5s ease-in-out;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.weather-card.with-background::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 100%);
+  z-index: 1;
+  border-radius: 8px;
+}
+
+.weather-card > * {
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.weather-card.with-background > * {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 /* Weather Card Animations */
@@ -216,6 +265,12 @@ main {
   transition: border-color 0.3s ease;
 }
 
+.weather-card.with-background .weather-header {
+  padding-top: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+
 .location-info {
   display: flex;
   align-items: center;
@@ -225,6 +280,10 @@ main {
 .location-info h2 {
   margin: 0;
   font-size: 1.75rem;
+}
+
+.weather-card.with-background .location-info h2 {
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .refresh-btn {
@@ -243,6 +302,17 @@ main {
   background-color: var(--primary-color);
   color: var(--active-text-color);
 }
+
+.weather-card.with-background .refresh-btn {
+  border-color: #fff;
+  color: #fff;
+}
+
+.weather-card.with-background .refresh-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
 
 .refresh-btn:disabled {
   opacity: 0.6;
@@ -263,6 +333,10 @@ main {
   margin: 0;
 }
 
+.weather-card.with-background .weather-body .temperature {
+   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
 .weather-body .feels-like {
   font-size: 1.1rem;
   color: var(--text-color-light);
@@ -277,12 +351,27 @@ main {
   transition: color 0.3s ease;
 }
 
+.weather-card.with-background .weather-body .feels-like,
+.weather-card.with-background .weather-body .condition {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
 .weather-details {
   font-size: 1rem;
 }
 
+.weather-card.with-background .weather-details {
+  padding-bottom: 1.5rem;
+}
+
 .weather-details p {
   margin: 0.5rem 0;
+}
+
+.weather-card.with-background .weather-details p {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Loader Styles */
@@ -552,6 +641,11 @@ body.ocean .error-action-btn:hover {
   to { transform: translate(2px, -1px); }
 }
 
+@keyframes gust {
+  from { transform: translateX(-3px); }
+  to { transform: translateX(3px); }
+}
+
 @keyframes bob {
   from { transform: translateY(0); }
   to { transform: translateY(3px); }
@@ -587,7 +681,7 @@ body.ocean .error-action-btn:hover {
   animation: bob 0.9s ease-in-out infinite alternate;
 }
 .icon-windy {
-  animation: sway 2.5s ease-in-out infinite alternate;
+  animation: gust 1.8s ease-in-out infinite alternate;
 }
 .icon-snow {
   animation: snow-fall 3s ease-in-out infinite alternate;

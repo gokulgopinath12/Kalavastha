@@ -121,7 +121,12 @@ const Home = () => {
             </div>
         )}
         {weatherData && !isLoading && !error && (
-          <div className="weather-card">
+          <div
+             className="weather-card with-background"
+             style={{ backgroundImage: `url('https://source.unsplash.com/800x600/?${weatherData.condition.toLowerCase().replace(/\s/g, '+')},weather')` }}
+             role="img"
+             aria-label={`Image depicting ${weatherData.condition}`}
+           >
             <div className="weather-header">
               <div className="location-info">
                  <h2>{weatherData.location.name}, {weatherData.location.country}</h2>
@@ -153,7 +158,9 @@ const Home = () => {
           </div>
         )}
         {!isLoading && !error && !weatherData && (
-          <p>Search for a city to see the current weather.</p>
+          <div className="placeholder-container">
+            <p>Search for a city to see the current weather.</p>
+          </div>
         )}
       </div>
     </div>
